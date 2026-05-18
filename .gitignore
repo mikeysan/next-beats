@@ -20,6 +20,10 @@
 # production
 /build
 
+# markdown
+*.md
+!README.md
+
 # misc
 .DS_Store
 *.pem
