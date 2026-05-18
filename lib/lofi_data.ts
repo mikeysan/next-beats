@@ -48,6 +48,12 @@ export const DEFAULT_CHANNELS: Channel[] = [
     description: 'Lofi Music to sleep,relax,study...',
     creator: 'Healing Me',
   },
+  {
+    name: 'MATRIX CURRENT Cyberpunk Hacker Ambient Radio',
+    url: 'https://www.youtube.com/watch?v=5-Xm-Mn_M2k',
+    description: 'Cyberpunk hacker ambient music stream for deep focus, coding and programming...',
+    creator: 'Cyberpunk Coding Music',
+  },
 ]
 
 export const channels: Channel[] = [...DEFAULT_CHANNELS]
