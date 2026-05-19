@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { X, Save, Settings } from 'lucide-react'
-import { GitHubIcon } from '@/components/GitHubIcon'
-import { soundEffects, DEFAULT_CHANNELS } from '@/lib/lofi_data'
+// --- ADDED/CHANGED: Import getAllCategories ---
+import { soundEffects, DEFAULT_CHANNELS, getAllCategories } from '@/lib/lofi_data'
 import ChannelButtons from '@/components/ChannelButtons'
 import PlaybackControls from '@/components/PlaybackControls'
 import ChannelManagement from '@/components/ChannelManagement'
@@ -79,14 +79,16 @@ const EnhancedLofiPlayer = () => {
     CustomSoundEffect[]
   >('customSoundEffects', [])
 
+  // --- ADDED/CHANGED: State for Category Filtering ---
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')
+
   const playerRef = useRef<any>(null)
   const [activeEffects, setActiveEffects] = useState<Set<string>>(new Set())
   const [isAddingChannel, setIsAddingChannel] = useState(false)
   const [newChannel, setNewChannel] = useState<Channel>({
     name: '',
     url: '',
-    description: '',
-    creator: '',
+    category:'',
     isCustom: true,
   })
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
@@ -96,8 +98,7 @@ const EnhancedLofiPlayer = () => {
   const [editingChannel, setEditingChannel] = useState<Channel>({
     name: '',
     url: '',
-    description: '',
-    creator: '',
+    category:'',
     isCustom: true,
   })
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -111,7 +112,6 @@ const EnhancedLofiPlayer = () => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Get theme from localStorage directly to ensure immediate application
       const savedTheme = localStorage.getItem('lofi-theme') || 'dark'
       document.documentElement.dataset.theme = savedTheme
       if (currentTheme !== savedTheme) {
@@ -154,6 +154,21 @@ const EnhancedLofiPlayer = () => {
     setCurrentTheme(theme)
   }
 
+  // --- ADDED/CHANGED: Handler to switch categories and sync video ---
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category)
+    
+    // If selecting a specific category, switch to the first channel in that category
+    // to keep the video player in sync with the buttons.
+    if (category !== 'All') {
+      const firstInCategory = allChannels.find(c => c.category === category)
+      if (firstInCategory) {
+        const index = allChannels.indexOf(firstInCategory)
+        if (index !== -1) setCurrentChannel(index)
+      }
+    }
+  }
+
   const handleAddChannel = () => {
     if (!newChannel.name || !newChannel.url) {
       alert('Channel Name and URL are required.')
@@ -169,8 +184,7 @@ const EnhancedLofiPlayer = () => {
     setNewChannel({
       name: '',
       url: '',
-      description: '',
-      creator: '',
+      category:'',
       isCustom: true,
     })
   }
@@ -185,7 +199,6 @@ const EnhancedLofiPlayer = () => {
       !channelToDelete.isCustom &&
       typeof channelToDelete.originalIndex === 'number'
     ) {
-      // It's a default channel
       if (!hiddenDefaultChannels.includes(channelToDelete.originalIndex)) {
         const updatedHidden = [
           ...hiddenDefaultChannels,
@@ -194,7 +207,6 @@ const EnhancedLofiPlayer = () => {
         setHiddenDefaultChannels(updatedHidden)
       }
     } else {
-      // It's a custom channel
       const updatedChannels = customChannels.filter(
         (channel) =>
           channel.name !== channelToDelete.name ||
@@ -203,7 +215,6 @@ const EnhancedLofiPlayer = () => {
       setCustomChannels(updatedChannels)
     }
 
-    // Switch channel if needed
     if (channelIndex === currentChannel) {
       newChannelIndex = Math.max(0, channelIndex - 1)
       setCurrentChannel(newChannelIndex)
@@ -223,16 +234,26 @@ const EnhancedLofiPlayer = () => {
   }
 
   const allChannels = useMemo<Channel[]>(() => {
-    // Get visible default channels
     const visibleDefaultChannels = DEFAULT_CHANNELS.map((channel, index) => ({
       ...channel,
       isCustom: false,
       originalIndex: index,
     })).filter((_, index) => !hiddenDefaultChannels.includes(index))
 
-    // Add custom channels
     return [...visibleDefaultChannels, ...customChannels]
   }, [customChannels, hiddenDefaultChannels])
+
+  // --- ADDED/CHANGED: Filter channels based on selection ---
+  const filteredChannels = useMemo(() => {
+    if (selectedCategory === 'All') return allChannels
+    return allChannels.filter(c => c.category === selectedCategory)
+  }, [allChannels, selectedCategory])
+
+  // --- ADDED/CHANGED: Get unique categories for buttons ---
+  const categories = useMemo(() => {
+    return ['All', ...getAllCategories(allChannels)]
+  }, [allChannels])
+
 
   const handleSaveChannel = () => {
     if (!newChannel.name || !newChannel.url) {
@@ -249,8 +270,7 @@ const EnhancedLofiPlayer = () => {
     setNewChannel({
       name: '',
       url: '',
-      description: '',
-      creator: '',
+      category:'',
       isCustom: true,
     })
   }
@@ -275,7 +295,6 @@ const EnhancedLofiPlayer = () => {
     if (!channelToEdit) return
 
     if (channelToEdit.isCustom) {
-      // Editing a custom channel
       const customIndex = customChannels.findIndex(
         (channel) =>
           channel.name === channelToEdit.name &&
@@ -288,7 +307,6 @@ const EnhancedLofiPlayer = () => {
         setCustomChannels(updatedChannels)
       }
     } else if (typeof channelToEdit.originalIndex === 'number') {
-      // Editing a default channel - hide default and add as custom
       if (!hiddenDefaultChannels.includes(channelToEdit.originalIndex)) {
         const updatedHidden = [
           ...hiddenDefaultChannels,
@@ -308,8 +326,7 @@ const EnhancedLofiPlayer = () => {
     setEditingChannel({
       name: '',
       url: '',
-      description: '',
-      creator: '',
+      category:'',
       isCustom: true,
     })
   }
@@ -319,15 +336,7 @@ const EnhancedLofiPlayer = () => {
       className={styles['theme-container']}
       data-theme={mounted ? currentTheme : 'dark'}
     >
-      <a
-        href="https://github.com/btahir/next-beats"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed right-4 top-4 hidden text-[var(--lofi-text-primary)] transition-opacity hover:opacity-70 lg:block"
-        aria-label="View source on GitHub"
-      >
-        <GitHubIcon />
-      </a>
+     
       <div className="flex min-h-screen w-full items-start justify-center bg-[var(--lofi-background)] p-4 transition-colors duration-500 sm:items-center sm:p-8">
         <div className="w-full max-w-4xl space-y-8 py-4">
           {/* Retro TV */}
@@ -378,7 +387,6 @@ const EnhancedLofiPlayer = () => {
           <div className="space-y-6 rounded-xl bg-[var(--lofi-card)] p-4 transition-colors duration-500 sm:p-6">
             {/* Channel Information */}
             <div className="relative space-y-1 px-2 font-mono text-[var(--lofi-text-primary)]">
-              {/* Settings button */}
               <div className="absolute top-0 right-0 flex justify-center">
                 <button
                   onClick={() => setIsSettingsOpen(true)}
@@ -392,11 +400,8 @@ const EnhancedLofiPlayer = () => {
                   <h2 className="text-xl font-bold">
                     {allChannels[currentChannel].name}
                   </h2>
-                  <p className="text-sm text-[var(--lofi-text-secondary)]">
-                    {allChannels[currentChannel].description}
-                  </p>
                   <p className="text-sm text-[var(--lofi-accent)]">
-                    by {allChannels[currentChannel].creator}
+                    Category: {allChannels[currentChannel].category}
                   </p>
                 </>
               ) : (
@@ -404,24 +409,44 @@ const EnhancedLofiPlayer = () => {
                   <h2 className="text-xl font-bold">
                     {DEFAULT_CHANNELS[0].name}
                   </h2>
-                  <p className="text-sm text-[var(--lofi-text-secondary)]">
-                    {DEFAULT_CHANNELS[0].description}
-                  </p>
-                  <p className="text-sm text-purple-400">
-                    by {DEFAULT_CHANNELS[0].creator}
+                  <p className="text-sm text-[var(--lofi-accent)]">
+                    category: {allChannels[currentChannel]?.category || 'Loading...'}
                   </p>
                 </>
               )}
             </div>
 
+            {/* --- ADDED/CHANGED: Category Filter Buttons --- */}
+            {mounted && (
+              <div className="flex flex-wrap gap-2 px-2">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryChange(cat)}
+                    className={`
+                      px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200
+                      ${selectedCategory === cat
+                        ? 'bg-[var(--lofi-accent)] border-[var(--lofi-accent)] text-white'
+                        : 'bg-transparent border-[var(--lofi-border)] text-[var(--lofi-text-secondary)] hover:border-[var(--lofi-accent)] hover:text-[var(--lofi-text-primary)]'
+                      }
+                    `}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Channel Buttons */}
             {mounted && (
               <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                {/* --- ADDED/CHANGED: Pass 'filteredChannels' instead of 'allChannels' --- */}
                 <ChannelButtons
-                  channels={allChannels}
+                  channels={filteredChannels}
                   currentChannel={currentChannel}
                   setCurrentChannel={setCurrentChannel}
                   currentTheme={currentTheme}
+                  allChannels={allChannels} 
                 />
               </div>
             )}
@@ -525,26 +550,15 @@ const EnhancedLofiPlayer = () => {
                   }
                   className={`w-full rounded-lg bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]`}
                 />
+               
                 <input
                   type="text"
-                  placeholder="Description"
-                  value={editingChannel.description}
+                  placeholder="Category"
+                  value={editingChannel.category}
                   onChange={(e) =>
                     setEditingChannel({
                       ...editingChannel,
-                      description: e.target.value,
-                    })
-                  }
-                  className={`w-full rounded-lg bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]`}
-                />
-                <input
-                  type="text"
-                  placeholder="Creator"
-                  value={editingChannel.creator}
-                  onChange={(e) =>
-                    setEditingChannel({
-                      ...editingChannel,
-                      creator: e.target.value,
+                      category: e.target.value,
                     })
                   }
                   className={`w-full rounded-lg bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]`}

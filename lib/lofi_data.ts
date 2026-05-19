@@ -9,48 +9,71 @@ import {
   Car,
   Waves,
 } from 'lucide-react'
-import { Channel, SoundEffect } from '@/types/lofi'
+// CHANGED 1: Removed 'Channel' from this import to prevent conflict with the local type definition
+import { SoundEffect } from '@/types/lofi'
+
+export type Channel = {
+  name: string;
+  url: string;
+  category: string;        
+};
 
 export const DEFAULT_CHANNELS: Channel[] = [
-  {
+ {
     name: 'Lofi Girl',
     url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
-    description: 'Beats to relax/study to',
-    creator: 'Lofi Girl',
+    category:'lofi',
   },
   {
     name: 'Chillhop Radio',
     url: 'https://www.youtube.com/watch?v=5yx6BWlEVcY',
-    description: 'jazzy & lofi hip hop beats',
-    creator: 'Chillhop Music',
+    category: 'chill',
   },
   {
     name: 'Chilled Raccoon',
     url: 'https://www.youtube.com/watch?v=7NOSDKb0HlU',
-    description: 'late night lofi mix',
-    creator: 'Chilled Raccoon',
+    category: 'edm',
   },
   {
     name: 'Smooth Jazz',
     url: 'https://www.youtube.com/watch?v=HhqWd3Axq9Y',
-    description: 'warm jazz music at coffee shop',
-    creator: 'Relax Jazz Cafe',
+    category: 'lofi',
   },
   {
     name: 'Tokyo night drive',
     url: 'https://www.youtube.com/watch?v=Lcdi9O2XB4E',
-    description: 'lofi hiphop + chill + beats',
-    creator: 'Tokyo Tones',
+    category: 'lofi',
   },
   {
     name: 'Japan Cafe Vibe',
     url: 'https://www.youtube.com/watch?v=bRnTGwCbr3E',
-    description: 'Lofi Music to sleep,relax,study...',
-    creator: 'Healing Me',
+    category: 'lofi',
+  },
+  {
+    name: 'Hacker Ambient Radio',
+    url: 'https://www.youtube.com/watch?v=5-Xm-Mn_M2k',
+    category: 'lofi',
   },
 ]
 
-export const channels: Channel[] = [...DEFAULT_CHANNELS]
+export const groupChannelsByCategory = (channels: Channel[]) => {
+  return channels.reduce((acc, channel) => {
+    const category = channel.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(channel);
+    return acc;
+  }, {} as Record<string, Channel[]>);
+};
+
+export const getAllCategories = (channels: Channel[] = DEFAULT_CHANNELS): string[] => {
+  const categories = new Set(channels.map(c => c.category));
+  return Array.from(categories).sort();
+};
+
+// CHANGED 2: Removed the duplicate 'channels' variable, the bad import, and the usage examples below it.
+// They were causing the "Cannot find module" and "merged declaration" errors.
 
 export const soundEffects: SoundEffect[] = [
   {

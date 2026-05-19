@@ -13,16 +13,7 @@ const geistMono = localFont({
   weight: '100 900',
 })
 
-export const metadata: Metadata = {
-  title: 'Next Beats | Your Ultimate Music Experience',
-  description: 'Next Beats - A modern music player built with Next.js. Discover, play, and enjoy your favorite tracks with a beautiful interface.',
-  keywords: ['music', 'player', 'next.js', 'streaming', 'audio', 'beats'],
-  authors: [{ name: 'Next Beats Team' }],
-  viewport: 'width=device-width, initial-scale=1',
-  icons: {
-    icon: '/favicon.ico',
-  },
-}
+
 
 export default function RootLayout({
   children,

@@ -77,21 +77,13 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
             }
             className="rounded-[var(--lofi-button-radius)] bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]"
           />
-          <input
+          
+                    <input
             type="text"
-            placeholder="Description"
-            value={newChannel.description}
+            placeholder="Category"
+            value={newChannel.category}
             onChange={(e) =>
-              setNewChannel({ ...newChannel, description: e.target.value })
-            }
-            className="rounded-[var(--lofi-button-radius)] bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]"
-          />
-          <input
-            type="text"
-            placeholder="Creator"
-            value={newChannel.creator}
-            onChange={(e) =>
-              setNewChannel({ ...newChannel, creator: e.target.value })
+              setNewChannel({ ...newChannel, category: e.target.value })
             }
             className="rounded-[var(--lofi-button-radius)] bg-[var(--lofi-card-hover)] px-3 py-2 text-sm text-[var(--lofi-text-primary)] placeholder:text-[var(--lofi-text-secondary)]"
           />
