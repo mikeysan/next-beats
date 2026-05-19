@@ -2,9 +2,9 @@ export interface Channel {
   originalIndex?: number
   name: string
   url: string
-  description: string
-  creator: string
+ category: string
   isCustom?: boolean
+  
 }
 
 export interface SoundEffect {
