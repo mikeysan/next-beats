@@ -1,11 +1,14 @@
 import { Channel } from '@/types/lofi'
+import { Edit2, X } from 'lucide-react'
 
 interface ChannelButtonsProps {
-  channels: Channel[]
-  currentChannel: number
+  channels: Channel[]                    // filtered channels
+  currentChannel: number                 // global index in allChannels
   setCurrentChannel: (index: number) => void
   currentTheme: string
   allChannels: Channel[]
+  onEdit?: (filteredIndex: number) => void      // NEW
+  onDelete?: (filteredIndex: number) => void    // NEW
 }
 
 export default function ChannelButtons({
@@ -14,7 +17,10 @@ export default function ChannelButtons({
   setCurrentChannel,
   currentTheme,
   allChannels,
+  onEdit,
+  onDelete,
 }: ChannelButtonsProps) {
+
   const handleChannelClick = (channel: Channel) => {
     const globalIndex = allChannels.findIndex(
       (c) => c.name === channel.name && c.url === channel.url
@@ -30,44 +36,31 @@ export default function ChannelButtons({
   }
 
   return (
-    <div
-      className="
-        grid 
-        grid-cols-2          /* 2 columns on very small screens */
-        sm:grid-cols-3      /* 3 columns on small screens */
-        md:grid-cols-4      /* 4 columns on medium screens */
-        lg:grid-cols-6      /* 6 columns on large screens (Max) */
-        gap-3               /* Space between grid items */
-        w-full
-      "
-    >
-      {channels.map((channel, idx) => (
-        <button
-          key={`${channel.name}-${idx}`}
-          onClick={() => handleChannelClick(channel)}
-          className={`
-            w-full
-            flex items-center justify-center /* Center text vertically and horizontally */
-            px-2 py-3            /* Increased vertical padding for wrapped text */
-            rounded-lg
-            text-sm font-medium
-            text-center
-            whitespace-normal    /* Allows text to wrap to new lines */
-            break-words          /* Breaks long words if they exceed width */
-            leading-tight        /* Tightens line height for wrapped text */
-            transition-all
-            duration-200
-            shadow-sm
-            hover:shadow-md
-            ${
-              isPlaying(channel)
-                ? 'bg-[var(--lofi-accent)] text-white shadow-[var(--lofi-accent)]/50 scale-105'
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full">
+      {channels.map((channel, filteredIndex) => (
+        <div key={`${channel.name}-${filteredIndex}`} className="group relative">
+          <button
+            onClick={() => handleChannelClick(channel)}
+            className={`
+              w-full h-full min-h-[52px]
+              flex items-center justify-center
+              px-3 py-3 rounded-xl
+              text-sm font-medium text-center
+              whitespace-normal break-words leading-tight
+              transition-all duration-200
+              shadow-sm hover:shadow-md
+              ${isPlaying(channel)
+                ? 'bg-[var(--lofi-accent)] text-white shadow-[var(--lofi-accent)]/50 scale-[1.02]'
                 : 'bg-[var(--lofi-card-hover)] text-[var(--lofi-text-secondary)] hover:bg-[var(--lofi-button-hover)] hover:text-[var(--lofi-text-primary)]'
-            }
-          `}
-        >
-          {channel.name}
-        </button>
+              }
+            `}
+          >
+            {channel.name}
+          </button>
+
+          {/* Edit & Delete buttons (visible on hover) */}
+          
+        </div>
       ))}
     </div>
   )

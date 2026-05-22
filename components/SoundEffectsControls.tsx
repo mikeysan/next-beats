@@ -213,7 +213,7 @@ const SoundEffectsControls: React.FC<SoundEffectsControlsProps> = ({
   return (
     <div className="space-y-4">
       <div className="mb-4 flex flex-row justify-between gap-4 sm:items-center">
-        <h3 className="mt-2 font-mono text-sm text-[var(--lofi-text-primary)]">
+        <h3 className="text-2xl font-semibold text-[var(--lofi-text-primary)]">
           Effects
         </h3>
         <div className="flex items-center space-x-2">

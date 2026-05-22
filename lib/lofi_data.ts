@@ -21,7 +21,7 @@ export type Channel = {
 export const DEFAULT_CHANNELS: Channel[] = [
  {
     name: 'Lofi Girl',
-    url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+    url: 'https://www.youtube.com/watch?v=EWrX250Zhko',
     category:'lofi',
   },
   {
@@ -78,55 +78,55 @@ export const getAllCategories = (channels: Channel[] = DEFAULT_CHANNELS): string
 export const soundEffects: SoundEffect[] = [
   {
     id: 'rain',
-    name: 'Rain',
+    name: '',
     file: 'https://www.youtube.com/watch?v=mPZkdNFkNps',
     icon: Cloud,
   },
   {
     id: 'fire',
-    name: 'Fireplace',
+    name: '',
     file: 'https://www.youtube.com/watch?v=L_LUpnjgPso',
     icon: Flame,
   },
   {
     id: 'cafe',
-    name: 'Cafe Ambiance',
+    name: '',
     file: 'https://www.youtube.com/watch?v=h2zkV-l_TbY',
     icon: Coffee,
   },
   {
     id: 'wind',
-    name: 'Wind',
+    name: '',
     file: 'https://youtu.be/sGkh1W5cbH4?si=L3aMNvyIYASQlYll',
     icon: Wind,
   },
   {
     id: 'birds',
-    name: 'Birds',
+    name: '',
     file: 'https://www.youtube.com/watch?v=Qm846KdZN_c',
     icon: Bird,
   },
   {
     id: 'keyboard',
-    name: 'Keyboard',
+    name: '',
     file: 'https://youtu.be/-2RiNR2fqRY?si=Er2L4D8MufctAgeE',
     icon: Keyboard,
   },
   {
     id: 'city',
-    name: 'City Traffic',
+    name: '',
     file: 'https://www.youtube.com/watch?v=8s5H76F3SIs',
     icon: Car,
   },
   {
     id: 'waves',
-    name: 'Ocean Waves',
+    name: '',
     file: 'https://www.youtube.com/watch?v=bn9F19Hi1Lk',
     icon: Waves,
   },
   {
     id: 'whitenoise',
-    name: 'White Noise',
+    name: '',
     file: 'https://www.youtube.com/watch?v=nMfPqeZjc2c',
     icon: Radio,
   },
