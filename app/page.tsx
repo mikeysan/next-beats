@@ -44,7 +44,7 @@ const EnhancedLofiPlayer = () => {
   const [isPlaying, setIsPlaying] = useState(true)
   const [volume, setVolume] = useLocalStorage('lofi-volume', 0.7)
   const [played, setPlayed] = useState(0)
-  const [currentTheme, setCurrentTheme] = useLocalStorage<string>('lofi-theme', 'dark')
+  const [currentTheme, setCurrentTheme] = useLocalStorage<string>('lofi-theme', 'light')
   const [effectsVolume, setEffectsVolume] = useLocalStorage('lofi-effects-volume', 0.5)
   const [customChannels, setCustomChannels] = useLocalStorage<Channel[]>('customChannels', [])
   const [hiddenDefaultChannels, setHiddenDefaultChannels] = useLocalStorage<number[]>('hiddenDefaultChannels', [])
@@ -70,7 +70,7 @@ const EnhancedLofiPlayer = () => {
   useEffect(() => { if (isBrowser) setMounted(true) }, [isBrowser])
 
   useEffect(() => {
-    const saved = localStorage.getItem('lofi-theme') || 'dark'
+    const saved = localStorage.getItem('lofi-theme') || 'light'
     document.documentElement.dataset.theme = saved
     setCurrentTheme(saved)
   }, [])
@@ -184,28 +184,29 @@ useEffect(() => {
   rehydrate()
 }, [mounted])
 
-// And update handleDeleteChannel to clean up IndexedDB:
-const handleDeleteChannel = async (filteredIndex: number) => {
-  const realIndex = getRealIndex(filteredIndex)
-  const channelToDelete = allChannels[realIndex]
 
-  if (channelToDelete?.sourceType === 'local') {
+const handleDeleteChannel = async (globalIndex: number) => {
+  console.log('handleDeleteChannel called with:', globalIndex, 'channel:', allChannels[globalIndex])
+  const channelToDelete = allChannels[globalIndex]
+  if (!channelToDelete) return
+
+  if (channelToDelete.sourceType === 'local') {
     if (channelToDelete.url?.startsWith('blob:')) URL.revokeObjectURL(channelToDelete.url)
     await deleteFileHandle(fileHandleKey(channelToDelete))
   }
 
-  if (channelToDelete?.isCustom) {
+  if (channelToDelete.isCustom) {
     setCustomChannels(customChannels.filter(c =>
       !(c.name === channelToDelete.name &&
         (c.localFileName
           ? c.localFileName === channelToDelete.localFileName
           : c.url === channelToDelete.url))
     ))
-  } else if (typeof channelToDelete?.originalIndex === 'number') {
+  } else if (typeof channelToDelete.originalIndex === 'number') {
     setHiddenDefaultChannels([...hiddenDefaultChannels, channelToDelete.originalIndex])
   }
 
-  if (realIndex === currentChannel) setCurrentChannel(0)
+  if (globalIndex === currentChannel) setCurrentChannel(0)
   setShowDeleteConfirm(null)
 }
 

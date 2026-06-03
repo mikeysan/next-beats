@@ -19,10 +19,10 @@ export type Channel = {
 };
 
 export const DEFAULT_CHANNELS: Channel[] = [
- {
+  {
     name: 'Lofi Girl',
-    url: 'https://www.youtube.com/watch?v=EWrX250Zhko',
-    category:'lofi',
+    url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+    category: 'lofi',
   },
   {
     name: 'Chillhop Radio',
@@ -40,13 +40,13 @@ export const DEFAULT_CHANNELS: Channel[] = [
     category: 'lofi',
   },
   {
-    name: 'Tokyo night drive',
+    name: 'Tokyo Night Drive',
     url: 'https://www.youtube.com/watch?v=Lcdi9O2XB4E',
     category: 'lofi',
   },
   {
     name: 'Japan Cafe Vibe',
-    url: 'https://www.youtube.com/watch?v=bRnTGwCbr3E',
+    url: 'https://www.youtube.com/watch?v=bRnTGbr3E',
     category: 'lofi',
   },
   {
