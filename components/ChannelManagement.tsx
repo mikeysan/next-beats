@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Edit2, X, Plus, Save, Youtube, FolderOpen } from 'lucide-react'
 import { Channel } from '@/types/lofi'
 import { saveFileHandle, resolveBlobUrl, fileHandleKey } from '@/hooks/useFileSystem'
@@ -28,50 +28,64 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
   const [sourceType, setSourceType] = useState<'youtube' | 'local'>('youtube')
   const [localFileName, setLocalFileName] = useState('')
   const [picking, setPicking] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handlePickFile = async () => {
-    if (!('showOpenFilePicker' in window)) {
-      alert('Your browser does not support the File System Access API. Try Chrome or Edge.')
-      return
-    }
-    setPicking(true)
-    try {
-      const [handle] = await (window as any).showOpenFilePicker({
-        types: [
-          {
-            description: 'Audio / Video files',
-            accept: {
-              'audio/*': ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a'],
-              'video/*': ['.mp4', '.webm', '.mkv'],
+    if ('showOpenFilePicker' in window) {
+      setPicking(true)
+      try {
+        const [handle] = await (window as any).showOpenFilePicker({
+          types: [
+            {
+              description: 'Audio / Video files',
+              accept: {
+                'audio/*': ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a'],
+                'video/*': ['.mp4', '.webm', '.mkv'],
+              },
             },
-          },
-        ],
-        multiple: false,
-      })
+          ],
+          multiple: false,
+        })
 
-      const blobUrl = await resolveBlobUrl(handle)
-      if (!blobUrl) return
+        const blobUrl = await resolveBlobUrl(handle)
+        if (!blobUrl) return
 
-      const fileName = handle.name
-      const channelName = newChannel.name || fileName.replace(/\.[^/.]+$/, '')
+        const fileName = handle.name
+        const channelName = newChannel.name || fileName.replace(/\.[^/.]+$/, '')
 
-      // Temporarily store handle so saveChannel can persist it
-      const updated: Channel = {
-        ...newChannel,
-        name: channelName,
-        url: blobUrl,
-        sourceType: 'local',
-        localFileName: fileName,
-        fileHandle: handle,
+        setNewChannel({
+          ...newChannel,
+          name: channelName,
+          url: blobUrl,
+          sourceType: 'local',
+          localFileName: fileName,
+          fileHandle: handle,
+        })
+        setLocalFileName(fileName)
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') console.error(err)
+      } finally {
+        setPicking(false)
       }
-      setNewChannel(updated)
-      setLocalFileName(fileName)
-    } catch (err: any) {
-      // User cancelled picker — not an error
-      if (err?.name !== 'AbortError') console.error(err)
-    } finally {
-      setPicking(false)
+    } else {
+      fileInputRef.current?.click()
     }
+  }
+
+  const handleFallbackFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (newChannel.url?.startsWith('blob:')) URL.revokeObjectURL(newChannel.url)
+    const blobUrl = URL.createObjectURL(file)
+    const channelName = newChannel.name || file.name.replace(/\.[^/.]+$/, '')
+    setNewChannel({
+      ...newChannel,
+      name: channelName,
+      url: blobUrl,
+      sourceType: 'local',
+      localFileName: file.name,
+    })
+    setLocalFileName(file.name)
   }
 
   const handleSourceTypeSwitch = (type: 'youtube' | 'local') => {
@@ -90,6 +104,15 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
 
   return (
     <>
+      {/* Hidden fallback input for non-Chrome browsers */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,video/*"
+        onChange={handleFallbackFile}
+        className="hidden"
+      />
+
       {!isAddingChannel ? (
         <div className="flex items-center gap-2">
           <button
