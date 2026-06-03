@@ -23,18 +23,17 @@ export default function ChannelButtons({
 
   const handleChannelClick = (channel: Channel) => {
     const globalIndex = allChannels.findIndex(
-      (c) => c.name === channel.name && c.url === channel.url
+      (c) => c.name === channel.name &&
+        (c.url === channel.url || (c.sourceType === 'local' && c.localFileName === channel.localFileName))
     )
-    if (globalIndex !== -1) {
-      setCurrentChannel(globalIndex)
-    }
+    if (globalIndex !== -1) setCurrentChannel(globalIndex)
   }
 
   const isPlaying = (channel: Channel) => {
     const currentObj = allChannels[currentChannel]
-    return currentObj?.name === channel.name && currentObj?.url === channel.url
+    return currentObj?.name === channel.name &&
+      (currentObj?.url === channel.url || (currentObj?.sourceType === 'local' && currentObj?.localFileName === channel.localFileName))
   }
-
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 w-full">
       {channels.map((channel, filteredIndex) => (
@@ -58,7 +57,8 @@ export default function ChannelButtons({
             {channel.name}
           </button>
 
-          {/* Edit & Delete buttons (visible on hover) */}
+          
+          
           
         </div>
       ))}

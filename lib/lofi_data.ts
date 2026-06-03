@@ -9,8 +9,8 @@ import {
   Car,
   Waves,
 } from 'lucide-react'
-// CHANGED 1: Removed 'Channel' from this import to prevent conflict with the local type definition
 import { SoundEffect } from '@/types/lofi'
+import { CloudRain } from 'lucide-react'
 
 export type Channel = {
   name: string;
@@ -72,15 +72,12 @@ export const getAllCategories = (channels: Channel[] = DEFAULT_CHANNELS): string
   return Array.from(categories).sort();
 };
 
-// CHANGED 2: Removed the duplicate 'channels' variable, the bad import, and the usage examples below it.
-// They were causing the "Cannot find module" and "merged declaration" errors.
-
 export const soundEffects: SoundEffect[] = [
   {
     id: 'rain',
     name: '',
     file: 'https://www.youtube.com/watch?v=mPZkdNFkNps',
-    icon: Cloud,
+    icon: CloudRain,
   },
   {
     id: 'fire',

@@ -1,6 +1,7 @@
-import React from 'react'
-import { Edit2, X, Plus, Save } from 'lucide-react'
+import React, { useState } from 'react'
+import { Edit2, X, Plus, Save, Youtube, FolderOpen } from 'lucide-react'
 import { Channel } from '@/types/lofi'
+import { saveFileHandle, resolveBlobUrl, fileHandleKey } from '@/hooks/useFileSystem'
 
 interface ChannelManagementProps {
   isAddingChannel: boolean
@@ -9,7 +10,7 @@ interface ChannelManagementProps {
   setNewChannel: (channel: Channel) => void
   saveChannel: () => void
   currentTheme: string
-  currentChannel: number          // index in allChannels
+  currentChannel: number
   handleEditChannel: (index: number) => void
   setShowDeleteConfirm: (channelIndex: number) => void
 }
@@ -24,6 +25,69 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
   handleEditChannel,
   setShowDeleteConfirm,
 }) => {
+  const [sourceType, setSourceType] = useState<'youtube' | 'local'>('youtube')
+  const [localFileName, setLocalFileName] = useState('')
+  const [picking, setPicking] = useState(false)
+
+  const handlePickFile = async () => {
+    if (!('showOpenFilePicker' in window)) {
+      alert('Your browser does not support the File System Access API. Try Chrome or Edge.')
+      return
+    }
+    setPicking(true)
+    try {
+      const [handle] = await (window as any).showOpenFilePicker({
+        types: [
+          {
+            description: 'Audio / Video files',
+            accept: {
+              'audio/*': ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a'],
+              'video/*': ['.mp4', '.webm', '.mkv'],
+            },
+          },
+        ],
+        multiple: false,
+      })
+
+      const blobUrl = await resolveBlobUrl(handle)
+      if (!blobUrl) return
+
+      const fileName = handle.name
+      const channelName = newChannel.name || fileName.replace(/\.[^/.]+$/, '')
+
+      // Temporarily store handle so saveChannel can persist it
+      const updated: Channel = {
+        ...newChannel,
+        name: channelName,
+        url: blobUrl,
+        sourceType: 'local',
+        localFileName: fileName,
+        fileHandle: handle,
+      }
+      setNewChannel(updated)
+      setLocalFileName(fileName)
+    } catch (err: any) {
+      // User cancelled picker — not an error
+      if (err?.name !== 'AbortError') console.error(err)
+    } finally {
+      setPicking(false)
+    }
+  }
+
+  const handleSourceTypeSwitch = (type: 'youtube' | 'local') => {
+    setSourceType(type)
+    if (newChannel.url?.startsWith('blob:')) URL.revokeObjectURL(newChannel.url)
+    setLocalFileName('')
+    setNewChannel({ ...newChannel, url: '', sourceType: type, fileHandle: undefined, localFileName: undefined })
+  }
+
+  const handleCancel = () => {
+    if (newChannel.url?.startsWith('blob:')) URL.revokeObjectURL(newChannel.url)
+    setSourceType('youtube')
+    setLocalFileName('')
+    setIsAddingChannel(false)
+  }
+
   return (
     <>
       {!isAddingChannel ? (
@@ -35,7 +99,6 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
           >
             <Edit2 size={18} />
           </button>
-
           <button
             onClick={() => setShowDeleteConfirm(currentChannel)}
             className="rounded-xl bg-[var(--lofi-button-bg)] p-3 text-[var(--lofi-button-text)] transition-all hover:bg-red-500/20 hover:text-red-400 active:scale-95"
@@ -43,7 +106,6 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
           >
             <X size={18} />
           </button>
-
           <button
             onClick={() => setIsAddingChannel(true)}
             className="rounded-xl bg-[var(--lofi-accent)] p-3 text-white transition-all hover:brightness-110 active:scale-95"
@@ -53,12 +115,35 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
           </button>
         </div>
       ) : (
-        /* Add New Channel Modal */
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-md rounded-2xl bg-[var(--lofi-card)] p-6 shadow-xl">
             <h3 className="mb-5 text-xl font-bold text-[var(--lofi-text-primary)]">
               Add New Channel
             </h3>
+
+            {/* Toggle */}
+            <div className="mb-5 flex rounded-xl bg-[var(--lofi-card-hover)] p-1">
+              <button
+                onClick={() => handleSourceTypeSwitch('youtube')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
+                  sourceType === 'youtube'
+                    ? 'bg-[var(--lofi-accent)] text-white'
+                    : 'text-[var(--lofi-text-secondary)] hover:text-[var(--lofi-text-primary)]'
+                }`}
+              >
+                <Youtube size={15} /> YouTube
+              </button>
+              <button
+                onClick={() => handleSourceTypeSwitch('local')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-all ${
+                  sourceType === 'local'
+                    ? 'bg-[var(--lofi-accent)] text-white'
+                    : 'text-[var(--lofi-text-secondary)] hover:text-[var(--lofi-text-primary)]'
+                }`}
+              >
+                <FolderOpen size={15} /> Local File
+              </button>
+            </div>
 
             <div className="space-y-4">
               <input
@@ -68,13 +153,32 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
                 onChange={(e) => setNewChannel({ ...newChannel, name: e.target.value })}
                 className="w-full rounded-xl bg-[var(--lofi-card-hover)] px-4 py-3 text-[var(--lofi-text-primary)]"
               />
-              <input
-                type="text"
-                placeholder="YouTube URL"
-                value={newChannel.url}
-                onChange={(e) => setNewChannel({ ...newChannel, url: e.target.value })}
-                className="w-full rounded-xl bg-[var(--lofi-card-hover)] px-4 py-3 text-[var(--lofi-text-primary)]"
-              />
+
+              {sourceType === 'youtube' ? (
+                <input
+                  type="text"
+                  placeholder="YouTube URL"
+                  value={newChannel.url}
+                  onChange={(e) => setNewChannel({ ...newChannel, url: e.target.value })}
+                  className="w-full rounded-xl bg-[var(--lofi-card-hover)] px-4 py-3 text-[var(--lofi-text-primary)]"
+                />
+              ) : (
+                <button
+                  onClick={handlePickFile}
+                  disabled={picking}
+                  className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all ${
+                    localFileName
+                      ? 'bg-[var(--lofi-accent)]/10 text-[var(--lofi-text-primary)]'
+                      : 'bg-[var(--lofi-card-hover)] text-[var(--lofi-text-secondary)] hover:text-[var(--lofi-text-primary)]'
+                  }`}
+                >
+                  <FolderOpen size={18} className="shrink-0" />
+                  <span className="truncate text-sm">
+                    {picking ? 'Opening…' : localFileName || 'Choose audio or video file…'}
+                  </span>
+                </button>
+              )}
+
               <input
                 type="text"
                 placeholder="Category (optional)"
@@ -86,17 +190,17 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({
 
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => setIsAddingChannel(false)}
+                onClick={handleCancel}
                 className="px-5 py-2 text-[var(--lofi-text-secondary)] hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={saveChannel}
-                className="flex items-center gap-2 rounded-xl bg-[var(--lofi-accent)] px-5 py-2 text-white hover:brightness-110"
+                disabled={!newChannel.name || !newChannel.url}
+                className="flex items-center gap-2 rounded-xl bg-[var(--lofi-accent)] px-5 py-2 text-white hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Save size={16} />
-                Save Channel
+                <Save size={16} /> Save Channel
               </button>
             </div>
           </div>

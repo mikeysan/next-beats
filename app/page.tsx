@@ -14,8 +14,9 @@ import SoundEffectsControls from '@/components/SoundEffectsControls'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { Channel, CustomSoundEffect } from '@/types/lofi'
 import SettingsModal from '@/components/SettingsModal'
+import { saveFileHandle, loadFileHandle, deleteFileHandle, resolveBlobUrl, fileHandleKey } from '@/hooks/useFileSystem'
 
-const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false })
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false })
 
 const StaticEffect = () => {
   const [staticPoints, setStaticPoints] = useState<{ left: string; top: string; opacity: number }[]>([])
@@ -94,7 +95,11 @@ const EnhancedLofiPlayer = () => {
   const getRealIndex = (filteredIndex: number): number => {
     if (selectedCategory === 'All') return filteredIndex
     const channel = filteredChannels[filteredIndex]
-    return allChannels.findIndex(c => c.url === channel.url)
+    if (!channel) return -1
+    return allChannels.findIndex(c =>
+      c.name === channel.name &&
+      (c.url === channel.url || (c.sourceType === 'local' && c.localFileName === channel.localFileName))
+    )
   }
 
   const toggleEffect = (effectId: string) => {
@@ -125,21 +130,93 @@ const EnhancedLofiPlayer = () => {
       : (prev - 1 + allChannels.length) % allChannels.length)
   }
 
-  const handleSaveChannel = () => {
-    if (!newChannel.name || !newChannel.url) return alert('Name and URL required')
-    setCustomChannels([...customChannels, { ...newChannel, isCustom: true }])
-    setIsAddingChannel(false)
-    setNewChannel({ name: '', url: '', category: '', isCustom: true })
+  
+
+
+// Replace handleSaveChannel:
+const handleSaveChannel = async () => {
+  if (!newChannel.name || !newChannel.url) return alert('Name and URL required')
+
+  const channelToSave = { ...newChannel, isCustom: true }
+
+  // Persist file handle to IndexedDB for local files
+  if (channelToSave.sourceType === 'local' && channelToSave.fileHandle) {
+    await saveFileHandle(fileHandleKey(channelToSave), channelToSave.fileHandle)
   }
 
-  const handleEditChannel = (filteredIndex: number) => {
-    const realIndex = getRealIndex(filteredIndex)
-    const channel = allChannels[realIndex]
-    if (channel) {
-      setEditingChannel({ ...channel })
-      setIsEditingChannel(realIndex)
-    }
+  // Don't store the fileHandle or blob URL in localStorage —
+  // strip them out, we'll rehydrate from IndexedDB on load
+  const { fileHandle, url, ...rest } = channelToSave
+  const toStore = channelToSave.sourceType === 'local'
+    ? { ...rest, url: '', localFileName: channelToSave.localFileName }
+    : channelToSave
+
+  setCustomChannels([...customChannels, toStore])
+  setIsAddingChannel(false)
+  setNewChannel({ name: '', url: '', category: '', isCustom: true })
+}
+
+// Add this effect to rehydrate blob URLs for local channels on mount:
+const rehydrated = useRef(false)
+
+useEffect(() => {
+  if (!mounted || rehydrated.current) return
+  rehydrated.current = true
+
+  const rehydrate = async () => {
+    const needsRehydration = customChannels.filter(
+      c => c.sourceType === 'local' && !c.url
+    )
+    if (needsRehydration.length === 0) return
+
+    const updated = await Promise.all(
+      customChannels.map(async (ch) => {
+        if (ch.sourceType !== 'local' || ch.url) return ch
+        const handle = await loadFileHandle(fileHandleKey(ch))
+        if (!handle) return ch
+        const blobUrl = await resolveBlobUrl(handle)
+        return blobUrl ? { ...ch, url: blobUrl } : ch
+      })
+    )
+    setCustomChannels(updated)
   }
+
+  rehydrate()
+}, [mounted])
+
+// And update handleDeleteChannel to clean up IndexedDB:
+const handleDeleteChannel = async (filteredIndex: number) => {
+  const realIndex = getRealIndex(filteredIndex)
+  const channelToDelete = allChannels[realIndex]
+
+  if (channelToDelete?.sourceType === 'local') {
+    if (channelToDelete.url?.startsWith('blob:')) URL.revokeObjectURL(channelToDelete.url)
+    await deleteFileHandle(fileHandleKey(channelToDelete))
+  }
+
+  if (channelToDelete?.isCustom) {
+    setCustomChannels(customChannels.filter(c =>
+      !(c.name === channelToDelete.name &&
+        (c.localFileName
+          ? c.localFileName === channelToDelete.localFileName
+          : c.url === channelToDelete.url))
+    ))
+  } else if (typeof channelToDelete?.originalIndex === 'number') {
+    setHiddenDefaultChannels([...hiddenDefaultChannels, channelToDelete.originalIndex])
+  }
+
+  if (realIndex === currentChannel) setCurrentChannel(0)
+  setShowDeleteConfirm(null)
+}
+
+const handleEditChannel = (globalIndex: number) => {
+  const channel = allChannels[globalIndex]
+ 
+  if (channel) {
+    setEditingChannel({ ...channel })
+    setIsEditingChannel(globalIndex)
+  }
+}
 
   const handleSaveEditedChannel = () => {
     if (!editingChannel.name || !editingChannel.url) {
@@ -166,21 +243,7 @@ const EnhancedLofiPlayer = () => {
     setIsEditingChannel(null)
   }
 
-  const handleDeleteChannel = (filteredIndex: number) => {
-    const realIndex = getRealIndex(filteredIndex)
-    const channelToDelete = allChannels[realIndex]
-
-    if (channelToDelete?.isCustom) {
-      setCustomChannels(customChannels.filter(c => 
-        c.name !== channelToDelete.name || c.url !== channelToDelete.url
-      ))
-    } else if (typeof channelToDelete?.originalIndex === 'number') {
-      setHiddenDefaultChannels([...hiddenDefaultChannels, channelToDelete.originalIndex])
-    }
-
-    if (realIndex === currentChannel) setCurrentChannel(0)
-    setShowDeleteConfirm(null)
-  }
+  
 
   return (
     <div className={styles['theme-container']} data-theme={mounted ? currentTheme : 'dark'}>
@@ -200,7 +263,7 @@ const EnhancedLofiPlayer = () => {
                 width="100%"
                 height="100%"
                 onProgress={handleProgress}
-                config={{ playerVars: { controls: 0, modestbranding: 1, iv_load_policy: 3, rel: 0 }}}
+                config={{ youtube: { playerVars: { controls: 0, modestbranding: 1, iv_load_policy: 3, rel: 0 }}}}
               />
             )}
           </div>
