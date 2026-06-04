@@ -244,8 +244,9 @@ const handleEditChannel = (globalIndex: number) => {
     setIsEditingChannel(null)
   }
 
+  const currentUrl = allChannels[currentChannel]?.url || ''
+  const isLocal = allChannels[currentChannel]?.sourceType === 'local'
   
-
   return (
     <div className={styles['theme-container']} data-theme={mounted ? currentTheme : 'dark'}>
       <div className="flex min-h-screen w-full justify-center bg-[var(--lofi-background)] p-4 sm:p-8">
@@ -256,16 +257,27 @@ const handleEditChannel = (globalIndex: number) => {
             {mounted && <StaticEffect />}
             {mounted && (
               <ReactPlayer
-                ref={playerRef}
-                url={allChannels[currentChannel]?.url || ''}
-                playing={isPlaying}
-                volume={volume}
-                loop
-                width="100%"
-                height="100%"
-                onProgress={handleProgress}
-                config={{ youtube: { playerVars: { controls: 0, modestbranding: 1, iv_load_policy: 3, rel: 0 }}}}
-              />
+              ref={playerRef}
+              url={currentUrl}
+              playing={isPlaying}
+              volume={volume}
+              
+              loop
+              width="100%"
+              height="100%"
+              onProgress={handleProgress}
+              config={{
+                youtube: {
+                  playerVars: { controls: 0, modestbranding: 1, iv_load_policy: 3, rel: 0 }
+                },
+                file: {
+                  forceVideo: true,
+                  attributes: {
+                    controlsList: 'nodownload',
+                  }
+                }
+              }}
+            />
             )}
           </div>
 

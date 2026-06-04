@@ -35,13 +35,13 @@ export const DEFAULT_CHANNELS: Channel[] = [
     category: 'edm',
   },
   {
-    name: 'Smooth Jazz',
-    url: 'https://www.youtube.com/watch?v=HhqWd3Axq9Y',
-    category: 'lofi',
+    name: 'Best nasheeds',
+    url: 'https://www.youtube.com/watch?v=01pk6vlysb4&list=RD01pk6vlysb4',
+    category: 'nasheed',
   },
   {
-    name: 'Tokyo Night Drive',
-    url: 'https://www.youtube.com/watch?v=Lcdi9O2XB4E',
+    name: 'Anime lofi',
+    url: 'https://www.youtube.com/watch?v=xTG7ir1NXqg',
     category: 'lofi',
   },
   {
@@ -50,9 +50,9 @@ export const DEFAULT_CHANNELS: Channel[] = [
     category: 'lofi',
   },
   {
-    name: 'Hacker Ambient Radio',
-    url: 'https://www.youtube.com/watch?v=5-Xm-Mn_M2k',
-    category: 'lofi',
+    name: 'avb tomorrowland 2016',
+    url: 'https://www.youtube.com/watch?v=YjfZGw-2-zc',
+    category: 'edm',
   },
 ]
 
