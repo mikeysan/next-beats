@@ -68,11 +68,23 @@ export async function resolveBlobUrl(
   handle: FileSystemFileHandle
 ): Promise<string | null> {
   try {
-    const permission = await (handle as any).requestPermission({ mode: 'read' })
-if (permission !== 'granted') return null
+    const permission = await (handle as any).queryPermission({ mode: 'read' })
+    console.log('permission status:', permission)
+    
+    if (permission === 'granted') {
+      const file = await handle.getFile()
+      return URL.createObjectURL(file)
+    }
+    
+    // Need to request — must be triggered by user gesture
+    const requested = await (handle as any).requestPermission({ mode: 'read' })
+    console.log('requested permission:', requested)
+    if (requested !== 'granted') return null
+    
     const file = await handle.getFile()
     return URL.createObjectURL(file)
-  } catch {
+  } catch (e) {
+    console.error('resolveBlobUrl error:', e)
     return null
   }
 }

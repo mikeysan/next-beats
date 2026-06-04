@@ -157,32 +157,32 @@ const handleSaveChannel = async () => {
 }
 
 // Add this effect to rehydrate blob URLs for local channels on mount:
+const [needsPermission, setNeedsPermission] = useState(false)
+
 const rehydrated = useRef(false)
 
 useEffect(() => {
   if (!mounted || rehydrated.current) return
   rehydrated.current = true
-
-  const rehydrate = async () => {
-    const needsRehydration = customChannels.filter(
-      c => c.sourceType === 'local' && !c.url
-    )
-    if (needsRehydration.length === 0) return
-
-    const updated = await Promise.all(
-      customChannels.map(async (ch) => {
-        if (ch.sourceType !== 'local' || ch.url) return ch
-        const handle = await loadFileHandle(fileHandleKey(ch))
-        if (!handle) return ch
-        const blobUrl = await resolveBlobUrl(handle)
-        return blobUrl ? { ...ch, url: blobUrl } : ch
-      })
-    )
-    setCustomChannels(updated)
-  }
-
-  rehydrate()
+  const hasLocal = customChannels.some(c => c.sourceType === 'local' && !c.url)
+  if (hasLocal) setNeedsPermission(true)
 }, [mounted])
+
+const handleRestoreLocalFiles = async () => {
+  setNeedsPermission(false)
+  const updated = await Promise.all(
+    customChannels.map(async (ch) => {
+      if (ch.sourceType !== 'local' || ch.url) return ch
+      const handle = await loadFileHandle(fileHandleKey(ch))
+      if (!handle) return ch
+      const blobUrl = await resolveBlobUrl(handle)
+      return blobUrl ? { ...ch, url: blobUrl } : ch
+    })
+  )
+  setCustomChannels(updated)
+}
+
+
 
 
 const handleDeleteChannel = async (globalIndex: number) => {
@@ -246,11 +246,25 @@ const handleEditChannel = (globalIndex: number) => {
 
   const currentUrl = allChannels[currentChannel]?.url || ''
   const isLocal = allChannels[currentChannel]?.sourceType === 'local'
+  console.log('currentUrl:', currentUrl, 'isLocal:', isLocal)
   
   return (
     <div className={styles['theme-container']} data-theme={mounted ? currentTheme : 'dark'}>
       <div className="flex min-h-screen w-full justify-center bg-[var(--lofi-background)] p-4 sm:p-8">
         <div className="w-full max-w-[1280px] space-y-8">
+        {needsPermission && (
+  <div className="flex items-center justify-between rounded-xl bg-[var(--lofi-accent)]/10 border border-[var(--lofi-accent)]/30 px-4 py-3">
+    <span className="text-sm text-[var(--lofi-text-primary)]">
+      Local files need permission to play
+    </span>
+    <button
+      onClick={handleRestoreLocalFiles}
+      className="rounded-lg bg-[var(--lofi-accent)] px-4 py-1.5 text-sm text-white hover:brightness-110"
+    >
+      Restore Files
+    </button>
+  </div>
+)}
 
           {/* Video Player */}
           <div className="relative aspect-video overflow-hidden rounded-3xl border-4 border-[var(--lofi-border)] bg-black shadow-2xl">
