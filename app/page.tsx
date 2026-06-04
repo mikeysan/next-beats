@@ -246,7 +246,7 @@ const handleEditChannel = (globalIndex: number) => {
 
   const currentUrl = allChannels[currentChannel]?.url || ''
   const isLocal = allChannels[currentChannel]?.sourceType === 'local'
-  console.log('currentUrl:', currentUrl, 'isLocal:', isLocal)
+  
   
   return (
     <div className={styles['theme-container']} data-theme={mounted ? currentTheme : 'dark'}>
